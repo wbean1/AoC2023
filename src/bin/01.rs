@@ -8,8 +8,7 @@ pub fn part_one(input: &str) -> Option<u32> {
     for line in lines {
         if line == "" { continue }
         let digits = extract_digits(&line);
-        let line_num = digits[0] * 10 + digits[digits.len() - 1];
-        current_sum = current_sum + line_num;
+        current_sum = current_sum + score_digits(digits);
     }
     Some(current_sum)
 }
@@ -21,10 +20,13 @@ pub fn part_two(input: &str) -> Option<u32> {
         if line == "" { continue }
         let new_line = replace_words(&line);
         let digits = extract_digits(&new_line);
-        let line_num = digits[0] * 10 + digits[digits.len() - 1];
-        current_sum = current_sum + line_num;
+        current_sum = current_sum + score_digits(digits);
     }
     Some(current_sum)
+}
+
+fn score_digits(digits: Vec<u32>) -> u32 {
+    digits[0] * 10 + digits[digits.len() - 1]
 }
 
 fn replace_words(line: &str) -> String {
@@ -66,6 +68,30 @@ fn extract_digits(line: &str) -> Vec<u32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_extract_digits() {
+        let result = extract_digits("a1b2c3d45sdfs6ogi7weq890");
+        assert_eq!(result, vec![1,2,3,4,5,6,7,8,9])
+    }
+
+    #[test]
+    fn test_replace_words() {
+        let result = extract_digits(replace_words("9abonecdefgeightwoeighthree9").as_str());
+        assert_eq!(result, vec![9,1,8,2,8,3,9])
+    }
+
+    #[test]
+    fn test_score_digits() {
+        let cases = HashMap::from([
+            (vec![1,2], 12),
+            (vec![1,2,3], 13),
+            (vec![9,2,3,4,2,3,4,2,1], 91),
+        ]);
+        for (digits, result) in cases {
+            assert_eq!(result, score_digits(digits))
+        }
+    }
 
     #[test]
     fn test_part_one() {
