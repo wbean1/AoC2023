@@ -35,7 +35,7 @@ fn parse_line(line: &str) -> (Vec<u32>, Vec<u32>) {
 
     (winning_nums, have_nums)
 }
-// cards_you_have: HashMap[(1, 1), (2, 1)]
+// cards_you_have:
 // 1 -> 1  *wins 4
 // 2 -> 1+1 *wins 2
 // 3 -> 1+1 +2 *wins 3
