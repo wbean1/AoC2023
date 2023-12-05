@@ -10,10 +10,15 @@ pub fn part_one(input: &str) -> Option<u64> {
     let seeds: Vec<u64> = first_line.split(" ").map(|s| s.parse::<u64>().unwrap()).collect();
 
     let sections: Vec<Vec<(u64,u64,u64)>> = parse_sections(lines.clone().skip(2).collect());
+    let least_location = plant_seeds(&seeds, &sections);
 
+    Some(least_location)
+}
+
+fn plant_seeds(seeds: &Vec<u64>, sections: &Vec<Vec<(u64,u64,u64)>>) -> u64 {
     let mut least_location: u64 = MAX;
     for seed in seeds {
-        let mut current_value = seed;
+        let mut current_value = *seed;
         for section in sections.iter() {
             // destination, current, range
             for line in section.iter() {
@@ -28,7 +33,7 @@ pub fn part_one(input: &str) -> Option<u64> {
         }
     }
 
-    Some(least_location)
+    least_location
 }
 
 fn parse_sections(lines: Vec<&str>) -> Vec<Vec<(u64, u64, u64)>> {
@@ -65,22 +70,7 @@ pub fn part_two(input: &str) -> Option<u64> {
 
     let sections: Vec<Vec<(u64,u64,u64)>> = parse_sections(lines.clone().skip(2).collect());
 
-    let mut least_location: u64 = MAX;
-    for seed in seeds {
-        let mut current_value = seed;
-        for section in sections.iter() {
-            // destination, current, range
-            for line in section.iter() {
-                if line.1 <= current_value && line.1 + line.2 > current_value {
-                    current_value = line.0 + (current_value - line.1);
-                    break;
-                }
-            }
-        }
-        if current_value < least_location {
-            least_location = current_value;
-        }
-    }
+    let least_location = plant_seeds(&seeds, &sections);
 
     Some(least_location)
 }
