@@ -8,7 +8,6 @@ pub fn part_one(input: &str) -> Option<u64> {
     let lines = input.split("\n");
     let first_line = lines.clone().nth(0).unwrap().split(": ").nth(1).unwrap();
     let seeds: Vec<u64> = first_line.split(" ").map(|s| s.parse::<u64>().unwrap()).collect();
-
     let sections: Vec<Vec<(u64,u64,u64)>> = parse_sections(lines.clone().skip(2).collect());
     let least_location = plant_seeds(&seeds, &sections);
 
@@ -67,9 +66,7 @@ pub fn part_two(input: &str) -> Option<u64> {
     let first_line = lines.clone().nth(0).unwrap().split(": ").nth(1).unwrap();
     let seeds_initial: Vec<u64> = first_line.split(" ").map(|s| s.parse::<u64>().unwrap()).collect();
     let seeds: Vec<u64> = expand_seeds(&seeds_initial);
-
     let sections: Vec<Vec<(u64,u64,u64)>> = parse_sections(lines.clone().skip(2).collect());
-
     let least_location = plant_seeds(&seeds, &sections);
 
     Some(least_location)
