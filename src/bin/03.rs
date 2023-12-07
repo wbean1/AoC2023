@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 advent_of_code::solution!(3);
 
 const SYMBOLS: &str = "@#$%&*-=+/";
@@ -163,6 +161,7 @@ fn find_gears(m: &Vec<Vec<&str>>) -> Vec<(usize, usize)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     #[test]
     fn test_part_one() {
