@@ -16,6 +16,19 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(winnings)
 }
 
+pub fn part_two(input: &str) -> Option<u32> {
+    let hands_to_bids:HashMap<&str, u32> = parse_input(input);
+    let hands = hands_to_bids.keys().cloned().collect::<Vec<&str>>();
+    let ordered_hands: Vec<&str> = order_hands(hands, true);
+    let mut winnings = 0;
+    for (index, hand) in ordered_hands.iter().enumerate() {
+        let bid = hands_to_bids.get(hand).unwrap();
+        winnings += bid * (u32::try_from(index).unwrap() + 1);
+    }
+
+    Some(winnings)
+}
+
 fn order_hands(hands: Vec<&str>, jokers: bool) -> Vec<&str> {
     let mut hands_to_scores = HashMap::new();
     for hand in hands.iter().copied() {
@@ -36,18 +49,22 @@ fn order_hands(hands: Vec<&str>, jokers: bool) -> Vec<&str> {
 }
 
 fn score_hand(hand: &str, jokers: bool) -> u64 {
+    let num_jokers: u32 = match jokers {
+        true => count_jokers(hand),
+        _ => 0,
+    };
     let score: u64;
-    if is_five_of_kind(hand, jokers){
+    if is_five_of_kind(hand, num_jokers){
         score = 60000000000 + score_by_card_values(hand, jokers);
-    } else if is_four_of_kind(hand, jokers){
+    } else if is_four_of_kind(hand, num_jokers){
         score = 50000000000 + score_by_card_values(hand, jokers);
-    } else if is_full_house(hand, jokers){
+    } else if is_full_house(hand, num_jokers){
         score = 40000000000 + score_by_card_values(hand, jokers);
-    } else if is_three_of_kind(hand, jokers){
+    } else if is_three_of_kind(hand, num_jokers){
         score = 30000000000 + score_by_card_values(hand, jokers);
-    } else if is_two_pair(hand, jokers){
+    } else if is_two_pair(hand, num_jokers){
         score = 20000000000 + score_by_card_values(hand, jokers);
-    } else if is_one_pair(hand, jokers){
+    } else if is_one_pair(hand, num_jokers){
         score = 10000000000 + score_by_card_values(hand, jokers);
     } else {
         score = score_by_card_values(hand, jokers);
@@ -63,23 +80,19 @@ fn count_jokers(hand: &str) -> u32 {
             count += 1;
         }
     }
+
     count
 }
 
-fn is_five_of_kind(hand: &str, jokers: bool) -> bool {
-    if jokers {
-        let num_jokers: u32 = count_jokers(hand);
-        if num_jokers == 0 {
-            return is_five_of_kind(hand, false);
-        } else if num_jokers == 1 {
-            return is_four_of_kind(hand, false);
-        } else if num_jokers == 2 {
-            return is_three_of_kind(hand, false);
-        } else if num_jokers == 3 {
-            return is_two_pair(hand, false);
-        } else if num_jokers == 4 {
-            return true;
-        }
+fn is_five_of_kind(hand: &str, num_jokers: u32) -> bool {
+    if num_jokers == 1 {
+        return is_four_of_kind(hand, 0);
+    } else if num_jokers == 2 {
+        return is_three_of_kind(hand, 0);
+    } else if num_jokers == 3 {
+        return is_two_pair(hand, 0);
+    } else if num_jokers == 4 {
+        return true;
     }
     let mut chars = hand.chars();
     let first = chars.next().unwrap();
@@ -90,21 +103,16 @@ fn is_five_of_kind(hand: &str, jokers: bool) -> bool {
     first == second && second == third && third == fourth && fourth == fifth
 }
 
-fn is_four_of_kind(hand: &str, jokers: bool) -> bool {
-    if jokers {
-        let num_jokers: u32 = count_jokers(hand);
-        if num_jokers == 0 {
-            return is_four_of_kind(hand, false);
-        } else if num_jokers == 1 {
-            return is_three_of_kind(hand, false);
-        } else if num_jokers == 2 {
-            return is_two_pair(hand, false);
-        } else if num_jokers >= 3 {
-            return true;
-        }
+fn is_four_of_kind(hand: &str, num_jokers: u32) -> bool {
+    if num_jokers == 1 {
+        return is_three_of_kind(hand, 0);
+    } else if num_jokers == 2 {
+        return is_two_pair(hand, 0);
+    } else if num_jokers >= 3 {
+        return true;
     }
-    let new_hand = hand.chars().sorted().collect::<String>();
-    let mut chars = new_hand.chars();
+    let sorted_hand = hand.chars().sorted().collect::<String>();
+    let mut chars = sorted_hand.chars();
     let first = chars.next().unwrap();
     let second = chars.next().unwrap();
     let third = chars.next().unwrap();
@@ -114,21 +122,16 @@ fn is_four_of_kind(hand: &str, jokers: bool) -> bool {
         (second == third && third == fourth && fourth == fifth)
 }
 
-fn is_full_house(hand: &str, jokers: bool) -> bool {
-    if jokers {
-        let num_jokers: u32 = count_jokers(hand);
-        if num_jokers == 0 {
-            return is_full_house(hand, false);
-        } else if num_jokers == 1 {
-            return is_two_pair(hand, false) || is_three_of_kind(hand, false);
-        } else if num_jokers == 2 {
-            return is_two_pair(hand, false);
-        } else if num_jokers >= 3 {
-            return true;
-        }
+fn is_full_house(hand: &str, num_jokers: u32) -> bool {
+    if num_jokers == 1 {
+        return is_two_pair(hand, 0) || is_three_of_kind(hand, 0);
+    } else if num_jokers == 2 {
+        return is_two_pair(hand, 0);
+    } else if num_jokers >= 3 {
+        return true;
     }
-    let new_hand = hand.chars().sorted().collect::<String>();
-    let mut chars = new_hand.chars();
+    let sorted_hand = hand.chars().sorted().collect::<String>();
+    let mut chars = sorted_hand.chars();
     let first = chars.next().unwrap();
     let second = chars.next().unwrap();
     let third = chars.next().unwrap();
@@ -138,19 +141,14 @@ fn is_full_house(hand: &str, jokers: bool) -> bool {
         (first == second && third == fourth && fourth == fifth)
 }
 
-fn is_three_of_kind(hand: &str, joker: bool) -> bool {
-    if joker {
-        let num_jokers: u32 = count_jokers(hand);
-        if num_jokers == 0 {
-            return is_three_of_kind(hand, false);
-        } else if num_jokers == 1 {
-            return is_one_pair(hand, false);
-        } else if num_jokers >= 2 {
-            return true;
-        }
+fn is_three_of_kind(hand: &str, num_jokers: u32) -> bool {
+    if num_jokers == 1 {
+        return is_one_pair(hand, 0);
+    } else if num_jokers >= 2 {
+        return true;
     }
-    let new_hand = hand.chars().sorted().collect::<String>();
-    let mut chars = new_hand.chars();
+    let sorted_hand = hand.chars().sorted().collect::<String>();
+    let mut chars = sorted_hand.chars();
     let first = chars.next().unwrap();
     let second = chars.next().unwrap();
     let third = chars.next().unwrap();
@@ -161,19 +159,14 @@ fn is_three_of_kind(hand: &str, joker: bool) -> bool {
         (third == fourth && fourth == fifth)
 }
 
-fn is_two_pair(hand: &str, jokers: bool) -> bool {
-    if jokers {
-        let num_jokers: u32 = count_jokers(hand);
-        if num_jokers == 0 {
-            return is_two_pair(hand, false);
-        } else if num_jokers == 1 {
-            return is_one_pair(hand, false);
-        } else if num_jokers >= 2 {
-            return true;
-        }
+fn is_two_pair(hand: &str, num_jokers: u32) -> bool {
+    if num_jokers == 1 {
+        return is_one_pair(hand, 0);
+    } else if num_jokers >= 2 {
+        return true;
     }
-    let new_hand = hand.chars().sorted().collect::<String>();
-    let mut chars = new_hand.chars();
+    let sorted_hand = hand.chars().sorted().collect::<String>();
+    let mut chars = sorted_hand.chars();
     let first = chars.next().unwrap();
     let second = chars.next().unwrap();
     let third = chars.next().unwrap();
@@ -184,17 +177,12 @@ fn is_two_pair(hand: &str, jokers: bool) -> bool {
         (second == third && fourth == fifth)
 }
 
-fn is_one_pair(hand: &str, jokers: bool) -> bool {
-    if jokers {
-        let num_jokers: u32 = count_jokers(hand);
-        if num_jokers == 0 {
-            return is_one_pair(hand, false);
-        } else if num_jokers >= 1 {
-            return true;
-        }
+fn is_one_pair(hand: &str, num_jokers: u32) -> bool {
+    if num_jokers >= 1 {
+        return true;
     }
-    let new_hand = hand.chars().sorted().collect::<String>();
-    let mut chars = new_hand.chars();
+    let sorted_hand = hand.chars().sorted().collect::<String>();
+    let mut chars = sorted_hand.chars();
     let first = chars.next().unwrap();
     let second = chars.next().unwrap();
     let third = chars.next().unwrap();
@@ -261,23 +249,44 @@ fn parse_input(input: &str) -> HashMap<&str, u32> {
     hands_to_bids
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    let hands_to_bids:HashMap<&str, u32> = parse_input(input);
-    let hands = hands_to_bids.keys().cloned().collect::<Vec<&str>>();
-    let ordered_hands: Vec<&str> = order_hands(hands, true);
-    let mut winnings = 0;
-    for (index, hand) in ordered_hands.iter().enumerate() {
-        let bid = hands_to_bids.get(hand).unwrap();
-        winnings += bid * (u32::try_from(index).unwrap() + 1);
-    }
-
-    Some(winnings)
-}
 
 #[cfg(test)]
 mod tests {
 
     use super::*;
+
+    #[test]
+    fn test_is_five_of_kind() {
+        let test_cases: HashMap<(&str, u32), bool> = HashMap::from([
+            (("AAAAA", 0), true),
+            (("AJAAA", 0), false),
+            (("AJAAA", 1), true),
+            (("AJAAQ", 1), false),
+            (("AJAJA", 2), true),
+            (("AJJJA", 3), true),
+            (("AQJJJ", 3), false),
+            (("AJJJJ", 4), true),
+            (("JJJJJ", 5), true),
+        ]);
+        for ((hand, num_jokers), expected) in test_cases {
+            let result = is_five_of_kind(hand, num_jokers);
+            assert_eq!(result, expected);
+        }
+    }
+    // etc...
+
+    #[test]
+    fn test_order_hands_basic() {
+        let test_cases: HashMap<(Vec<&str>, bool), Vec<&str>> = HashMap::from([
+            ((vec!["A2345", "23456", "34567"], false), vec!["23456", "34567", "A2345"]),
+            ((vec!["A2345", "J3456", "34567"], false), vec!["34567", "J3456", "A2345"]),
+            ((vec!["A2345", "J3456", "34567"], true), vec!["34567", "A2345", "J3456"]),
+        ]);
+        for ((hands, use_jokers), expected) in test_cases {
+            let result = order_hands(hands, use_jokers);
+            assert_eq!(result, expected);
+        }
+    }
 
     #[test]
     fn test_parse_input() {
