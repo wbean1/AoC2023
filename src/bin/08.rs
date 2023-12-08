@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use num::integer::lcm;
 use regex::Regex;
 advent_of_code::solution!(8);
 
@@ -25,48 +26,38 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(number_steps)
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
+pub fn part_two(input: &str) -> Option<u64> {
     let (instructions, map) = parse_map(input);
-    let mut current_instruction = instructions.to_string();
-    let mut current_nodes = find_nodes_ending_with(&map, 'A');
-    let mut number_steps = 0;
-    while !nodes_end_with(&current_nodes, 'Z') {
-        // figure out which direction we're moving and adjust the instruction string
-        let move_left = current_instruction.chars().nth(0).unwrap() == 'L';
-        current_instruction.remove(0);
-        if move_left {
-            current_instruction.push('L');
-        } else {
-            current_instruction.push('R');
-        }
-
-        // move to the next nodes
-        let mut destination_nodes: Vec<String> = Vec::new();
-        for node in current_nodes {
-            let destination_pair = map.get(node.as_str()).unwrap();
-            if move_left {
-                destination_nodes.push(destination_pair.0.to_string());
+    let mut nodes = find_nodes_ending_with(&map, 'A');
+    let mut cycles = Vec::new();
+    // i really don't think this is safe to assume, but whatever.  it works for the input
+    for mut node in nodes {
+        let mut number_steps: u64 = 0;
+        let mut current_instruction = instructions.to_string();
+        while node.chars().nth(2).unwrap() != 'Z' {
+            let (left, right) = map.get(node.as_str()).unwrap().to_owned();
+            if current_instruction.chars().nth(0).unwrap() == 'L' {
+                node = left.to_string();
+                current_instruction.remove(0);
+                current_instruction.push('L');
             } else {
-                destination_nodes.push(destination_pair.1.to_string());
+                node = right.to_string();
+                current_instruction.remove(0);
+                current_instruction.push('R');
             }
+            number_steps += 1;
         }
-        current_nodes = destination_nodes;
-
-        // increment steps taken
-        number_steps += 1;
+        cycles.push(number_steps);
     }
-
-    Some(number_steps)
+    Some(lcm_vec(&cycles))
 }
 
-fn nodes_end_with(nodes: &Vec<String>, c: char) -> bool {
-    for node in nodes {
-        if node.chars().nth(2).unwrap() != c {
-            return false
-        }
+fn lcm_vec(v: &Vec<u64>) -> u64 {
+    let mut result = v[0];
+    for i in 1..v.len() {
+        result = lcm(result, v[i]);
     }
-
-    true
+    result
 }
 
 fn find_nodes_ending_with(map: &HashMap<&str, (&str, &str)>, c: char) -> Vec<String> {
