@@ -13,7 +13,7 @@ pub fn part_one(input: &str) -> Option<u32> {
             current_node = left;
             current_instruction.remove(0);
             current_instruction.push('L');
-            
+
         } else {
             current_node = right;
             current_instruction.remove(0);
@@ -31,9 +31,17 @@ pub fn part_two(input: &str) -> Option<u32> {
     let mut current_nodes = find_nodes_ending_with(&map, 'A');
     let mut number_steps = 0;
     while !nodes_end_with(&current_nodes, 'Z') {
-        number_steps += 1;
-        let mut destination_nodes: Vec<String> = Vec::new();
+        // figure out which direction we're moving and adjust the instruction string
         let move_left = current_instruction.chars().nth(0).unwrap() == 'L';
+        current_instruction.remove(0);
+        if move_left {
+            current_instruction.push('L');
+        } else {
+            current_instruction.push('R');
+        }
+
+        // move to the next nodes
+        let mut destination_nodes: Vec<String> = Vec::new();
         for node in current_nodes {
             let destination_pair = map.get(node.as_str()).unwrap();
             if move_left {
@@ -42,13 +50,10 @@ pub fn part_two(input: &str) -> Option<u32> {
                 destination_nodes.push(destination_pair.1.to_string());
             }
         }
-        current_instruction.remove(0);
-        if move_left {
-            current_instruction.push('L');
-        } else {
-            current_instruction.push('R');
-        }
         current_nodes = destination_nodes;
+
+        // increment steps taken
+        number_steps += 1;
     }
 
     Some(number_steps)
