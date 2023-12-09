@@ -5,32 +5,30 @@ pub fn part_one(input: &str) -> Option<i32> {
         .lines()
         .map(|line| line.split_whitespace().map(|s| s.parse().unwrap()).collect())
         .collect();
-    let mut total = 0;
-    for line in number_lines.into_iter() {
-        total += find_next_value(line);
-    }
+    let total: i32 = number_lines
+        .into_iter()
+        .map(|line| find_next_value(line))
+        .sum();
     Some(total)
 }
 
 fn find_next_value(line: Vec<i32>) -> i32 {
-    if all_zeroes(&line) {
-        return 0;
-    } else {
-        let mut difference_line = Vec::new();
-        for (i, number) in line.iter().skip(1).enumerate() {
-            difference_line.push(*number - line[i]);
+    match all_zeroes(&line) {
+        true => 0,
+        false => {
+            let difference_line = line
+                .iter()
+                .skip(1)
+                .enumerate()
+                .map(|(i, number)| *number - line[i])
+                .collect::<Vec<i32>>();
+            find_next_value(difference_line) + line.last().unwrap()
         }
-        return find_next_value(difference_line) + line.last().unwrap();
     }
 }
 
 fn all_zeroes(line: &Vec<i32>) -> bool {
-    for number in line.iter() {
-        if *number != 0 {
-            return false;
-        }
-    }
-    true
+    line.iter().all(|&x| x == 0)
 }
 
 pub fn part_two(input: &str) -> Option<i32> {
@@ -38,22 +36,26 @@ pub fn part_two(input: &str) -> Option<i32> {
         .lines()
         .map(|line| line.split_whitespace().map(|s| s.parse().unwrap()).collect())
         .collect();
-    let mut total = 0;
-    for line in number_lines.into_iter() {
-        total += find_previous_value(line);
-    }
+    let total: i32 = number_lines
+        .into_iter()
+        .map(|line| find_previous_value(line))
+        .sum();
+
     Some(total)
 }
 
 fn find_previous_value(line: Vec<i32>) -> i32 {
-    if all_zeroes(&line) {
-        return 0;
-    } else {
-        let mut difference_line = Vec::new();
-        for (i, number) in line.iter().skip(1).enumerate() {
-            difference_line.push(*number - line[i]);
+    match all_zeroes(&line) {
+        true => 0,
+        false => {
+            let difference_line = line
+                .iter()
+                .skip(1)
+                .enumerate()
+                .map(|(i, number)| *number - line[i])
+                .collect::<Vec<i32>>();
+              line.first().unwrap() - find_previous_value(difference_line)
         }
-        return line.first().unwrap() - find_previous_value(difference_line);
     }
 }
 
