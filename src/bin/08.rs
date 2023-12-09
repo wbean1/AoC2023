@@ -28,7 +28,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 
 pub fn part_two(input: &str) -> Option<u64> {
     let (instructions, map) = parse_map(input);
-    let mut nodes = find_nodes_ending_with(&map, 'A');
+    let nodes = find_nodes_ending_with(&map, 'A');
     let mut cycles = Vec::new();
     // i really don't think this is safe to assume, but whatever.  it works for the input
     for mut node in nodes {
