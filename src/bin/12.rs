@@ -16,25 +16,24 @@ pub fn part_one(input: &str) -> Option<u32> {
 
 fn count_permutations(pattern: &str, key: &str) -> u32 {
     let key_vec = key.split(",").map(|x| x.parse::<u32>().unwrap()).collect::<Vec<u32>>();
-    let permutations: Vec<String> = generate_permutation_matches(pattern.to_owned(), &key_vec);
 
-    permutations.len() as u32
+    generate_permutation_matches(pattern, &key_vec)
 }
 
-fn generate_permutation_matches(pattern: String, key: &Vec<u32>) -> Vec<String> {
-    let mut permutations = Vec::new();
+fn generate_permutation_matches(pattern: &str, key: &Vec<u32>) -> u32 {
+    let mut count = 0;
     if !pattern.contains("?") {
-        if permutation_matches(pattern.clone(), key) {
-            permutations.push(pattern);
+        if permutation_matches(pattern.to_string(), key) {
+            count += 1;
         }
     } else {
-        if permutation_can_possibly_match(pattern.clone(), key) {
-            permutations.extend(generate_permutation_matches(pattern.replacen("?", ".", 1), key));
-            permutations.extend(generate_permutation_matches(pattern.replacen("?", "#", 1), key));
+        if permutation_can_possibly_match(pattern.to_string(), key) {
+            count += generate_permutation_matches(pattern.replacen("?", ".", 1).as_str(), key);
+            count += generate_permutation_matches(pattern.replacen("?", "#", 1).as_str(), key);
         }
     }
 
-    permutations
+    count
 }
 
 fn permutation_can_possibly_match(permutation: String, key: &Vec<u32>) -> bool {
@@ -98,13 +97,15 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
 
-#[test]
+    #[test]
     fn test_permutation_can_possibly_match() {
         let test_cases = HashMap::from([
-            (("###.##?????", vec![1, 2, 3, 4, 5]), false),
-            (("###.##?????", vec![3, 2, 3, 4, 4]), true),
-            (("###.##?????", vec![3, 4, 3, 3, 5]), true),
+            (("###.##?????", vec![1, 2, 3]), false),
+            (("###.##?????", vec![3, 2, 3]), true),
+            (("###.##?????", vec![3, 4, 3]), true),
+            (("###.##?????", vec![3, 2, 3]), true),
             (("###.##.....", vec![3, 2]), true),
+            (("###.##.?...", vec![3, 2]), true),
             (("###.##.#", vec![3, 2]), false),
         ]);
         for (input, expected) in test_cases {
