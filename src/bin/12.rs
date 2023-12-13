@@ -1,10 +1,10 @@
 use std::u32;
 use cached::proc_macro::cached;
-use cached::SizedCache;
+use cached::{Cached, SizedCache};
 
 advent_of_code::solution!(12);
 
-pub fn part_one(input: &str) -> Option<u32> {
+pub fn part_one(input: &str) -> Option<u64> {
     let map = input
         .lines()
         .map(|line| (line.split_whitespace().nth(0).unwrap(),line.split_whitespace().nth(1).unwrap()))
@@ -16,17 +16,18 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(sum)
 }
 
-fn count_permutations(pattern: &String, key_str: &String) -> u32 {
+fn count_permutations(pattern: &String, key_str: &String) -> u64 {
     let key_vec = key_str.split(",").map(|x| x.parse::<u32>().unwrap()).collect::<Vec<u32>>();
 
     generate_permutation_matches(pattern, &key_vec)
 }
 
 #[cached(
-    type = "SizedCache<(String, Vec<u32>), u32>",
-    create = "{ SizedCache::with_size(1000000) }",
+    name = "GEN_PERM_MATCHES",
+    type = "SizedCache<(String, Vec<u32>), u64>",
+    create = "{ SizedCache::with_size(10000000) }",
 )]
-fn generate_permutation_matches(pattern: &String, key_vec: &Vec<u32>) -> u32 {
+fn generate_permutation_matches(pattern: &String, key_vec: &Vec<u32>) -> u64 {
     let mut count = 0;
     if !pattern.contains("?") {
         if permutation_matches(pattern, key_vec) {
@@ -46,36 +47,44 @@ fn generate_permutation_matches(pattern: &String, key_vec: &Vec<u32>) -> u32 {
     count
 }
 
-#[cached(
-    type = "SizedCache<(String, Vec<u32>), bool>",
-    create = "{ SizedCache::with_size(1000000) }",
-)]
+// caching here does not help
 fn permutation_can_possibly_match(permutation: &String, key_vec: &Vec<u32>) -> bool {
     let permutation_so_far = permutation.split("?").nth(0).unwrap().to_owned();
     let count = count_occurrences_in_permutation(&permutation_so_far);
 
+    if count.len() == 0 {
+        return true;
+    }
+
     if count.len() > key_vec.len() {
         return false;
     }
-    for (i, number) in count.into_iter().enumerate() {
-        if key_vec[i] < number {
+    // the last value doesn't need to be exact, just less than or equal, so we skip it
+    for (i, number) in count.iter().rev().skip(1).enumerate() {
+        if key_vec[count.len()-2-i] != *number {
             return false;
         }
+    }
+    let last_index = count.len()-1;
+    if count[last_index] > key_vec[last_index] {
+        return false;
     }
 
     true
 }
 
-#[cached(
-    type = "SizedCache<(String, Vec<u32>), bool>",
-    create = "{ SizedCache::with_size(1000000) }",
-)]
+// caching here does not help
 fn permutation_matches(permutation: &String, key_vec: &Vec<u32>) -> bool {
     let count = count_occurrences_in_permutation(permutation);
 
     count == *key_vec
 }
 
+#[cached(
+    name = "COUNT_OCCUR",
+    type = "SizedCache<String, Vec<u32>>",
+    create = "{ SizedCache::with_size(10000000) }",
+)]
 fn count_occurrences_in_permutation(permutation: &String) -> Vec<u32> {
     let mut count = Vec::new();
     let mut current_count = 0;
@@ -96,7 +105,7 @@ fn count_occurrences_in_permutation(permutation: &String) -> Vec<u32> {
     count
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
+pub fn part_two(input: &str) -> Option<u64> {
     let map = input
         .lines()
         .map(|line| (line.split_whitespace().nth(0).unwrap(),line.split_whitespace().nth(1).unwrap()))
@@ -105,7 +114,16 @@ pub fn part_two(input: &str) -> Option<u32> {
     for line in map.iter() {
         let pattern = format!("{}?{}?{}?{}?{}", line.0, line.0, line.0, line.0, line.0);
         let key = format!("{},{},{},{},{}", line.1, line.1, line.1, line.1, line.1);
-        sum += count_permutations(&pattern, &key);
+        let result = count_permutations(&pattern, &key);
+        sum += result;
+        let mut cache1 = GEN_PERM_MATCHES.lock().unwrap();
+        let mut cache2 = COUNT_OCCUR.lock().unwrap();
+        // println!("GEN_PERM_MATCHES: hits: {}, misses: {}", cache1.cache_hits().unwrap_or(0), cache1.cache_misses().unwrap_or(0));
+        // println!("COUNT_OCCUR: hits: {}, misses: {}", cache2.cache_hits().unwrap_or(0), cache2.cache_misses().unwrap_or(0));
+        cache1.cache_clear();
+        cache1.cache_reset_metrics();
+        cache2.cache_clear();
+        cache2.cache_reset_metrics();
     }
     Some(sum)
 }
