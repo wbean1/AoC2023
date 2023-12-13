@@ -1,4 +1,6 @@
 use std::u32;
+use cached::proc_macro::cached;
+use cached::SizedCache;
 
 advent_of_code::solution!(12);
 
@@ -9,42 +11,54 @@ pub fn part_one(input: &str) -> Option<u32> {
         .collect::<Vec<(&str,&str)>>();
     let mut sum = 0;
     for line in map.iter() {
-        sum += count_permutations(line.0, line.1);
+        sum += count_permutations(&line.0.to_string(), &line.1.to_string());
     }
     Some(sum)
 }
 
-fn count_permutations(pattern: &str, key: &str) -> u32 {
-    let key_vec = key.split(",").map(|x| x.parse::<u32>().unwrap()).collect::<Vec<u32>>();
+fn count_permutations(pattern: &String, key_str: &String) -> u32 {
+    let key_vec = key_str.split(",").map(|x| x.parse::<u32>().unwrap()).collect::<Vec<u32>>();
 
     generate_permutation_matches(pattern, &key_vec)
 }
 
-fn generate_permutation_matches(pattern: &str, key: &Vec<u32>) -> u32 {
+#[cached(
+    type = "SizedCache<(String, Vec<u32>), u32>",
+    create = "{ SizedCache::with_size(1000000) }",
+)]
+fn generate_permutation_matches(pattern: &String, key_vec: &Vec<u32>) -> u32 {
     let mut count = 0;
     if !pattern.contains("?") {
-        if permutation_matches(pattern.to_string(), key) {
+        if permutation_matches(pattern, key_vec) {
             count += 1;
         }
     } else {
-        if permutation_can_possibly_match(pattern.to_string(), key) {
-            count += generate_permutation_matches(pattern.replacen("?", ".", 1).as_str(), key);
-            count += generate_permutation_matches(pattern.replacen("?", "#", 1).as_str(), key);
+        if permutation_can_possibly_match(pattern, key_vec) {
+            // ok so the trick here is to replace '..' with '.' so that we get better cache usage.
+            // in terms of matching the key, '..' and '.' accomplish the same thing.
+            // without this, test_part_two takes ~14min to run
+            // with this, it takes 5 seconds.
+            count += generate_permutation_matches(&pattern.replacen("?", ".", 1).replace("..", "."), key_vec);
+            count += generate_permutation_matches(&pattern.replacen("?", "#", 1).replace("..", "."), key_vec);
         }
     }
 
     count
 }
 
-fn permutation_can_possibly_match(permutation: String, key: &Vec<u32>) -> bool {
+#[cached(
+    type = "SizedCache<(String, Vec<u32>), bool>",
+    create = "{ SizedCache::with_size(1000000) }",
+)]
+fn permutation_can_possibly_match(permutation: &String, key_vec: &Vec<u32>) -> bool {
     let permutation_so_far = permutation.split("?").nth(0).unwrap().to_owned();
-    let count = count_occurrences_in_permutation(permutation_so_far);
+    let count = count_occurrences_in_permutation(&permutation_so_far);
 
-    if count.len() > key.len() {
+    if count.len() > key_vec.len() {
         return false;
     }
     for (i, number) in count.into_iter().enumerate() {
-        if key[i] < number {
+        if key_vec[i] < number {
             return false;
         }
     }
@@ -52,13 +66,17 @@ fn permutation_can_possibly_match(permutation: String, key: &Vec<u32>) -> bool {
     true
 }
 
-fn permutation_matches(permutation: String, key: &Vec<u32>) -> bool {
+#[cached(
+    type = "SizedCache<(String, Vec<u32>), bool>",
+    create = "{ SizedCache::with_size(1000000) }",
+)]
+fn permutation_matches(permutation: &String, key_vec: &Vec<u32>) -> bool {
     let count = count_occurrences_in_permutation(permutation);
 
-    count == *key
+    count == *key_vec
 }
 
-fn count_occurrences_in_permutation(permutation: String) -> Vec<u32> {
+fn count_occurrences_in_permutation(permutation: &String) -> Vec<u32> {
     let mut count = Vec::new();
     let mut current_count = 0;
     for c in permutation.chars() {
@@ -87,7 +105,7 @@ pub fn part_two(input: &str) -> Option<u32> {
     for line in map.iter() {
         let pattern = format!("{}?{}?{}?{}?{}", line.0, line.0, line.0, line.0, line.0);
         let key = format!("{},{},{},{},{}", line.1, line.1, line.1, line.1, line.1);
-        sum += count_permutations(pattern.as_str(), key.as_str());
+        sum += count_permutations(&pattern, &key);
     }
     Some(sum)
 }
@@ -103,14 +121,13 @@ mod tests {
             (("###.##?????", vec![1, 2, 3]), false),
             (("###.##?????", vec![3, 2, 3]), true),
             (("###.##?????", vec![3, 4, 3]), true),
-            (("###.##?????", vec![3, 2, 3]), true),
             (("###.##.....", vec![3, 2]), true),
             (("###.##.?...", vec![3, 2]), true),
             (("###.##.#", vec![3, 2]), false),
         ]);
         for (input, expected) in test_cases {
             assert_eq!(
-                permutation_can_possibly_match(input.0.to_owned(), &input.1),
+                permutation_can_possibly_match(&input.0.to_string(), &input.1),
                 expected
             );
         }
